@@ -3,7 +3,7 @@ import pygame
 pygame.init()
 relogio = pygame.time.Clock()
 
-tamanho = (1200, 500)
+tamanho = (1280, 720)
 tela = pygame.display.set_mode(tamanho)
 
 pygame.display.set_caption("Homeless Creed")
@@ -12,10 +12,16 @@ dt = 0
 #Carrega  a spritesheet para nosso projeto
 folhaSpritesIdle = pygame.image.load("assets/Homeless_3/Idle_2.png").convert_alpha()
 folhaSpritesWalk = pygame.image.load("assets/Homeless_3/Walk.png").convert_alpha()
-
+folhaSpritesJump = pygame.image.load("assets/Homeless_3/Jump.png").convert_alpha()
+folhaSpritesRun = pygame.image.load("assets/Homeless_3/Run.png").convert_alpha()
+folhaSpritesAttack = pygame.image.load("assets/Homeless_3/Attack_2.png").convert_alpha()
 #Define os frames
 framesIdle = []
 frameWalk = []
+frameJump = []
+frameRun = []
+frameAttack = []
+
 for i in range(11):
     frame = folhaSpritesIdle.subsurface(i * 128, 0, 128, 128)
     frame = pygame.transform.scale(frame, (230, 230))
@@ -26,6 +32,21 @@ for i1 in range(8):
     frames = pygame.transform.scale(frames, (230, 230))
     frameWalk.append(frames)
 
+for i2 in range(9):
+    frames = folhaSpritesJump.subsurface(i2 * 128, 0, 128, 128)
+    frames = pygame.transform.scale(frames, (230, 230))
+    frameJump.append(frames)
+
+for i3 in range(8):
+    frames = folhaSpritesRun.subsurface(i3 * 128, 0, 128, 128)
+    frames = pygame.transform.scale(frames, (230, 230))
+    frameRun.append(frames)
+
+for i4 in range(3):
+    frames = folhaSpritesAttack.subsurface(i4 * 128, 0, 128, 128)
+    frames = pygame.transform.scale(frames, (230, 230))
+    frameAttack.append(frames)
+
 #variaveis da animação do personagem parado
 indexFrameIdle = 0
 tempoAnimacaoIdle = 0.0
@@ -33,12 +54,40 @@ velocidadeAnimacaoIdle = 5
 
 indexFrameWalk = 0
 tempoAnimacaoWalk = 0.0
-velocidadeAnimacaoWalk = 10
+velocidadeAnimacaoWalk = 5
+
+indexFrameJump = 0
+tempoAnimacaoJump = 0.0
+velocidadeAnimacaoJump = 10
+
+indexFrameRun = 0
+tempoAnimacaoRun = 0.0
+velocidadeAnimacaoRun = 10
+
+indexFrameAttack = 0
+tempoAnimacaoAttack = 0.0
+velocidadeAnimacaoAttack = 5
+
+#
+listBgImages = [
+    pygame.image.load("assets/Apocalipse/Postapocalypce3/Pale/sky.png").convert_alpha(),
+    pygame.image.load("assets/Apocalipse/Postapocalypce3/Pale/moon.png").convert_alpha(),
+    pygame.image.load("assets/Apocalipse/Postapocalypce3/Pale/sand_back.png").convert_alpha(),
+    pygame.image.load("assets/Apocalipse/Postapocalypce3/Pale/sand&objects3.png").convert_alpha(),
+    pygame.image.load("assets/Apocalipse/Postapocalypce3/Pale/sand&objects2.png").convert_alpha(),
+    pygame.image.load("assets/Apocalipse/Postapocalypce3/Pale/sand&objects1.png").convert_alpha(),
+    pygame.image.load("assets/Apocalipse/Postapocalypce3/Pale/sand.png").convert_alpha()
+]
+for i in range(len(listBgImages)):
+    listBgImages[i] = pygame.transform.scale(listBgImages[i], tamanho)
 
 #retangulo do personagem
 
 personagemRect = framesIdle[0].get_rect(midbottom=(120, 490))
 personagemRect = frameWalk[0].get_rect(midbottom=(120, 490))
+direcaoPersonagem = 1
+gravidade = 1
+chao = 550
 
 while True:
     for event in pygame.event.get():
@@ -47,12 +96,16 @@ while True:
             exit()
 
     tela.fill((255, 255, 255))
+    for i in range(len(listBgImages)):
+        tela.blit(listBgImages[i], (0, 0))
 
     #Atualiza a animação do personagem parado
     tempoAnimacaoIdle += dt
     tempoAnimacaoWalk += dt
-
+    tempoAnimacaoJump += dt
+    tempoAnimacaoRun += dt
     estaAndando = False
+    estaCorrendo = False
 
     if tempoAnimacaoIdle >= 1 / velocidadeAnimacaoIdle:
         indexFrameIdle = (indexFrameIdle +1) % len(framesIdle)
@@ -62,28 +115,65 @@ while True:
         indexFrameWalk = (indexFrameWalk +1) % len(frameWalk)
         tempoAnimacaoWalk = 0.0
 
+    if tempoAnimacaoJump >= 1 / velocidadeAnimacaoJump:
+        indexFrameJump = (indexFrameJump +1) % len(frameJump)
+        tempoAnimacaoJump = 0.0
+
+    if tempoAnimacaoRun >= 1 / velocidadeAnimacaoRun:
+        indexFrameRun = (indexFrameRun +1) % len(frameRun)
+        tempoAnimacaoRun = 0.0
     #Movimenta o personagem
     teclas = pygame.key.get_pressed()
 
+    if teclas[pygame.K_a] and teclas[pygame.K_LSHIFT]:
+        direcaoPersonagem = -1
+        personagemRect.x -= 1 * dt
+        estaAndando = True
 
     if teclas[pygame.K_a]:
-        virar = pygame.transform.flip(folhaSpritesWalk(True))
-        personagemRect.x -= 200 * dt
-        estaAndando = True
-    if teclas[pygame.K_d]:
-        personagemRect.x += 200 * dt
-        estaAndando = True
+        direcaoPersonagem = -1
+        personagemRect.x -= 300 * dt
+        estaCorrendo = True
 
-    if estaAndando:
-        tela.blit(frameWalk[indexFrameWalk], personagemRect)
+    if teclas[pygame.K_d]:
+        personagemRect.x += 300 * dt
+        estaCorrendo = True
+        direcaoPersonagem = 1
+
+    if teclas[pygame.K_d] and teclas[pygame.K_LSHIFT]:
+        direcaoPersonagem = 1
+        personagemRect.x += 1 * dt
+        estaAndando = True
+    if teclas[pygame.K_w]:
+        if personagemRect.centery == chao:
+            gravidade = -50
+            indexFrameJump = 0
+
+    gravidade += 3
+
+    personagemRect.y += gravidade
+
+    if personagemRect.centery >= chao:
+        personagemRect.centery = chao
+
+    if gravidade < 0:
+        frame = frameJump[indexFrameJump]
     else:
-        tela.blit(framesIdle[indexFrameIdle], personagemRect)
-    #Desenha o personagem
-    
+        if estaAndando: # Verifica se o personagem está andando
+            frame = frameWalk[indexFrameWalk]
+        elif estaCorrendo:
+            frame = frameRun[indexFrameRun]
+        else: # Caso contrário, o personagem está parado
+            frame = framesIdle[indexFrameIdle]
+
+    if direcaoPersonagem == -1: # Verifica se o personagem está olhando para a esquerda e inverte a imagem
+        frame = pygame.transform.flip(frame, True, False) # Inverte a imagem
+
+    tela.blit(frame, personagemRect) # Desenha o personagem na tela
     
 
     #desenha um retangulo em volta do personagem
-    pygame.draw.rect(tela, (0, 0, 0), personagemRect, 2)
+    #pygame.draw.rect(tela, (0, 0, 0), personagemRect, 2)
 
     pygame.display.update()
     dt = relogio.tick(60) / 800

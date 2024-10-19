@@ -67,6 +67,8 @@ velocidadeAnimacaoRun = 10
 indexFrameAttack = 0
 tempoAnimacaoAttack = 0.0
 velocidadeAnimacaoAttack = 5
+estaAndando = False
+estaCorrendo = False
 
 #
 listBgImages = [
@@ -78,6 +80,10 @@ listBgImages = [
     pygame.image.load("assets/Apocalipse/Postapocalypce3/Pale/sand&objects1.png").convert_alpha(),
     pygame.image.load("assets/Apocalipse/Postapocalypce3/Pale/sand.png").convert_alpha()
 ]
+listBgVelocidade = [1, 3, 7, 9, 10, 15, 20]
+
+listBgPosicoes = [0 for _ in range(len(listBgImages))]
+
 for i in range(len(listBgImages)):
     listBgImages[i] = pygame.transform.scale(listBgImages[i], tamanho)
 
@@ -87,7 +93,9 @@ personagemRect = framesIdle[0].get_rect(midbottom=(120, 490))
 personagemRect = frameWalk[0].get_rect(midbottom=(120, 490))
 direcaoPersonagem = 1
 gravidade = 1
-chao = 550
+chao = 600
+correrPersonagem = 80
+caminhaPersonagem = 10
 
 while True:
     for event in pygame.event.get():
@@ -96,16 +104,34 @@ while True:
             exit()
 
     tela.fill((255, 255, 255))
+    #Percorre todas as imagens do plano de fundo para movimentar
     for i in range(len(listBgImages)):
-        tela.blit(listBgImages[i], (0, 0))
+        if estaCorrendo:
+            listBgPosicoes[i] -= listBgVelocidade[i] * correrPersonagem * dt * direcaoPersonagem
+        if estaAndando:
+            listBgPosicoes[i] -= listBgVelocidade[i] * caminhaPersonagem * dt * direcaoPersonagem
+
+        #Verificar se a imagem saiu
+        if listBgPosicoes[i] <= -tamanho[0]:
+            listBgPosicoes[i] = 0
+
+        if listBgPosicoes[i] >= tamanho[0]:
+            listBgPosicoes[i] = 0
+
+#Desenha o plano de fundo
+    for i in range(len(listBgImages)):
+        #Desenha a imagem de fundo que esta na tela
+        tela.blit(listBgImages[i], (listBgPosicoes[i], 0))
+        #Desenha a imagem do plano de fundo que esta fora da tela
+        tela.blit(listBgImages[i], (listBgPosicoes[i] + tamanho[0], 0))
+
+        tela.blit(listBgImages[i], (listBgPosicoes[i] + -tamanho[0], 0))
 
     #Atualiza a animação do personagem parado
-    tempoAnimacaoIdle += dt
-    tempoAnimacaoWalk += dt
-    tempoAnimacaoJump += dt
-    tempoAnimacaoRun += dt
-    estaAndando = False
-    estaCorrendo = False
+        tempoAnimacaoIdle += dt
+        tempoAnimacaoWalk += dt
+        tempoAnimacaoJump += dt
+        tempoAnimacaoRun += dt
 
     if tempoAnimacaoIdle >= 1 / velocidadeAnimacaoIdle:
         indexFrameIdle = (indexFrameIdle +1) % len(framesIdle)
@@ -122,28 +148,31 @@ while True:
     if tempoAnimacaoRun >= 1 / velocidadeAnimacaoRun:
         indexFrameRun = (indexFrameRun +1) % len(frameRun)
         tempoAnimacaoRun = 0.0
+    estaAndando = False
+    estaCorrendo = False
     #Movimenta o personagem
     teclas = pygame.key.get_pressed()
 
     if teclas[pygame.K_a] and teclas[pygame.K_LSHIFT]:
         direcaoPersonagem = -1
-        personagemRect.x -= 1 * dt
         estaAndando = True
-
+        estaCorrendo = False   
+           
     if teclas[pygame.K_a]:
         direcaoPersonagem = -1
-        personagemRect.x -= 300 * dt
         estaCorrendo = True
+        estaAndando = False
 
     if teclas[pygame.K_d]:
-        personagemRect.x += 300 * dt
         estaCorrendo = True
+        estaAndando = False
         direcaoPersonagem = 1
 
     if teclas[pygame.K_d] and teclas[pygame.K_LSHIFT]:
         direcaoPersonagem = 1
-        personagemRect.x += 1 * dt
         estaAndando = True
+        estaCorrendo = False
+
     if teclas[pygame.K_w]:
         if personagemRect.centery == chao:
             gravidade = -50
@@ -176,4 +205,4 @@ while True:
     #pygame.draw.rect(tela, (0, 0, 0), personagemRect, 2)
 
     pygame.display.update()
-    dt = relogio.tick(60) / 800
+    dt = relogio.tick(60) / 10000

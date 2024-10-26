@@ -1,4 +1,5 @@
 import pygame
+from random import randint
 
 pygame.init()
 relogio = pygame.time.Clock()
@@ -8,6 +9,9 @@ tela = pygame.display.set_mode(tamanho)
 
 pygame.display.set_caption("Homeless Creed")
 dt = 0
+
+#carrega a fonte paraa ser usada
+fonteTempo = pygame.font.Font("assets/Fonts/EnergyStation/Energy Station.ttf", 80)
 
 #Carrega  a spritesheet para nosso projeto
 folhaSpritesIdle = pygame.image.load("assets/Homeless_3/Idle_2.png").convert_alpha()
@@ -54,7 +58,7 @@ velocidadeAnimacaoIdle = 5
 
 indexFrameWalk = 0
 tempoAnimacaoWalk = 0.0
-velocidadeAnimacaoWalk = 5
+velocidadeAnimacaoWalk = 10
 
 indexFrameJump = 0
 tempoAnimacaoJump = 0.0
@@ -62,7 +66,7 @@ velocidadeAnimacaoJump = 10
 
 indexFrameRun = 0
 tempoAnimacaoRun = 0.0
-velocidadeAnimacaoRun = 10
+velocidadeAnimacaoRun = 15
 
 indexFrameAttack = 0
 tempoAnimacaoAttack = 0.0
@@ -95,13 +99,60 @@ direcaoPersonagem = 1
 gravidade = 1
 chao = 600
 correrPersonagem = 80
-caminhaPersonagem = 10
+caminhaPersonagem = 20
+tempoJogo = 0
+tempoJogo += dt
+
+#Cria a lista dos obstaculos
+
+listObstaculos = [
+    pygame.image.load(f"assets/Weapons/Armas/Icon28_{i:02d}.png").convert_alpha() for i in range(1, 40)
+]
+#redimensionamento da imagens
+for i in range(len(listObstaculos)):
+    listObstaculos[i] = pygame.transform.scale(listObstaculos[i], (50, 50))
+    #INverte e imagem
+    listObstaculos[i] = pygame.transform.flip(listObstaculos[i], True, False)
+    #Rotaciona as imagens
+    listObstaculos[i] = pygame.transform.rotate(listObstaculos[i], 35)
+
+listObAnimado = []
+AUMENTA_DIFICULDADE = pygame.USEREVENT +1
+pygame.time.set_timer(AUMENTA_DIFICULDADE, 10000)
+tempoSurgimentoObstaculo = 3000
+ADICIONA_OBSTACULO = pygame.USEREVENT + 2
+pygame.time.set_timer(ADICIONA_OBSTACULO, tempoSurgimentoObstaculo)
+
 
 while True:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             pygame.quit()
             exit()
+
+        if event.type == AUMENTA_DIFICULDADE:
+            correrPersonagem += 4
+
+            if tempoSurgimentoObstaculo > 1100:
+                tempoSurgimentoObstaculo -= 300
+
+        if event.type == ADICIONA_OBSTACULO:            
+            obstaculoImage = listObstaculos[randint(0, len(listObstaculos) - 1)]
+            posicaoX = randint (1280, 1500)
+            obstaculoRect = obstaculoImage.get_rect(midbottom=(posicaoX, 700))
+
+            obstaculo = {
+                "rect": obstaculoRect,
+                "image": obstaculoImage
+            }
+
+            listObAnimado.append(obstaculo)
+
+   # for i in range(len(listObAnimado)):
+       # tela.blit(listObAnimado[i])
+
+
+
 
     tela.fill((255, 255, 255))
     #Percorre todas as imagens do plano de fundo para movimentar
@@ -126,6 +177,20 @@ while True:
         tela.blit(listBgImages[i], (listBgPosicoes[i] + tamanho[0], 0))
 
         tela.blit(listBgImages[i], (listBgPosicoes[i] + -tamanho[0], 0))
+
+        #cria o texto para o tempo de jogo
+        textoTempo = fonteTempo.render(str(int(tempoJogo)), False, (255, 255, 255))
+
+        tela.blit(textoTempo, (tamanho[0] / 2, 30))
+
+        #Desenha o obstaculo
+        for obstaculo in listObAnimado:
+            obstaculo["rect"].x -= 30 * correrPersonagem * dt
+
+            if obstaculo["rect"].right < 0:
+                listObAnimado.remove(obstaculo)
+
+            tela.blit(obstaculo["image"], obstaculo["rect"])
 
     #Atualiza a animação do personagem parado
         tempoAnimacaoIdle += dt
@@ -205,4 +270,4 @@ while True:
     #pygame.draw.rect(tela, (0, 0, 0), personagemRect, 2)
 
     pygame.display.update()
-    dt = relogio.tick(60) / 10000
+    dt = relogio.tick(60) / 8000
